@@ -1,229 +1,362 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment 8 – REST APIs (Book, Course, Student)</title><style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:16px;background:#fafafa;color:#222}pre{background:#1e1e1e;color:#ddd;padding:12px;overflow:auto;border-radius:6px}h2{font-size:1rem;font-family:monospace;margin-top:28px}nav a{margin-right:12px}</style></head><body><nav><a href="../">Home</a><a href="../exp6/">Exp 6</a><a href="../exp7/">Exp 7</a><a href="../exp8/">Exp 8</a></nav><h1>Experiment 8 – REST APIs (Book, Course, Student)</h1><p>Source code. These are server-side apps, so they are shown here rather than run.</p><h2>book-api/.env.example</h2><pre>MONGO_URI=mongodb://127.0.0.1:27017/bookDB
-PORT=3001
-</pre><h2>book-api/.gitignore</h2><pre>node_modules
-.env
-</pre><h2>book-api/models/Book.js</h2><pre>const mongoose = require("mongoose");
-
-const bookSchema = new mongoose.Schema(
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment 8 – REST API output</title><style>:root{--bg:#f5f6f8;--fg:#1c1f24;--card:#fff;--bd:#d8dce2;--code:#14171c;--codefg:#e6e6e6;--ok:#1a7f37;--err:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e6e8eb;--card:#1d2127;--bd:#333a44;--code:#0b0d10}}
+body{font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--fg);max-width:920px;margin:0 auto;padding:16px 16px 60px;line-height:1.5}
+nav a{margin-right:14px}h1{font-size:1.5rem}h2{font-size:1.1rem;margin-top:32px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin:12px 0}
+.req{font-family:ui-monospace,Consolas,monospace;font-size:.9rem;word-break:break-all}
+.m{font-weight:700}.s{display:inline-block;padding:0 8px;border-radius:10px;color:#fff;font-size:.8rem;margin-left:8px}
+.s2{background:var(--ok)}.s4{background:var(--err)}
+pre{background:var(--code);color:var(--codefg);padding:10px 12px;overflow:auto;border-radius:6px;font-size:.85rem;margin:8px 0 0;white-space:pre-wrap;word-break:break-word}
+iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;background:#fff;margin-top:8px}
+.note{font-size:.85rem;opacity:.75}</style></head><body><nav><a href="../">Home</a><a href="../exp6/">Exp 6</a><a href="../exp7/">Exp 7</a><a href="../exp8/">Exp 8</a></nav><h1>Experiment 8 – REST API output</h1><p>Output of the three APIs in <code>experiments_6_7_8_code/exp8</code>, each started with Node.js and called with real requests.</p>
+<h2>Task 1 – Student API (<code>student-api</code>, in-memory)</h2><div class="card"><div class="req"><span class="m">GET</span> /students<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
   {
-    title:           { type: String, required: true, trim: true },
-    author:          { type: String, required: true, trim: true },
-    category:        { type: String, trim: true, default: "General" },
-    publicationYear: { type: Number, required: true },
-    availableCopies: { type: Number, required: true, min: 0 },
+    "id": 1,
+    "name": "Aarav Shah",
+    "department": "EXTC",
+    "semester": 5
   },
-  { timestamps: true }
-);
-
-module.exports = mongoose.model("Book", bookSchema);
-</pre><h2>book-api/package.json</h2><pre>{ "name": "book-api", "version": "1.0.0", "main": "server.js", "scripts": { "start": "node server.js" }, "dependencies": { "dotenv": "^16.4.5", "express": "^4.21.2", "mongoose": "^8.9.0" } }
-</pre><h2>book-api/server.js</h2><pre>// Task 3: Book catalogue API with filtering, validation and consistent errors
-require("dotenv").config();
-const express = require("express");
-const mongoose = require("mongoose");
-const Book = require("./models/Book");
-
-const app = express();
-app.use(express.json());
-
-// Consistent error format: { "error": { "status": 400, "message": "...", "details": [...] } }
-const sendError = (res, status, message, details) =&gt;
-  res.status(status).json({ error: { status, message, ...(details &amp;&amp; { details }) } });
-
-// Escape user text before using it in a regular expression
-const escapeRegex = (s) =&gt; s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&amp;");
-
-// Validate incoming book data
-function validateBook(body) {
-  const errors = [];
-  const { title, author, publicationYear, availableCopies } = body;
-  if (typeof title !== "string" || title.trim() === "") errors.push("title must not be empty");
-  if (typeof author !== "string" || author.trim() === "") errors.push("author must not be empty");
-  const year = Number(publicationYear);
-  if (publicationYear === undefined || !Number.isInteger(year) || year &lt; 1000 || year &gt; new Date().getFullYear())
-    errors.push(`publicationYear must be a valid year (1000-${new Date().getFullYear()})`);
-  const copies = Number(availableCopies);
-  if (availableCopies === undefined || !Number.isFinite(copies) || copies &lt; 0)
-    errors.push("availableCopies must be a non-negative number");
-  return errors;
-}
-
-// GET /books?category=Science&amp;author=Rao  (both filters optional, case-insensitive)
-app.get("/books", async (req, res, next) =&gt; {
-  try {
-    const filter = {};
-    if (req.query.category) filter.category = new RegExp(`^${escapeRegex(req.query.category)}$`, "i");
-    if (req.query.author)   filter.author   = new RegExp(escapeRegex(req.query.author), "i");
-    res.status(200).json(await Book.find(filter));
-  } catch (err) { next(err); }
-});
-
-// GET /books/:id
-app.get("/books/:id", async (req, res, next) =&gt; {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) return sendError(res, 400, "Invalid book id");
-  try {
-    const book = await Book.findById(req.params.id);
-    if (!book) return sendError(res, 404, "Book not found");
-    res.status(200).json(book);
-  } catch (err) { next(err); }
-});
-
-// POST /books
-app.post("/books", async (req, res, next) =&gt; {
-  const errors = validateBook(req.body);
-  if (errors.length) return sendError(res, 400, "Validation failed", errors);
-  try {
-    const { title, author, category, publicationYear, availableCopies } = req.body;
-    const book = await Book.create({ title, author, category, publicationYear, availableCopies });
-    res.status(201).json(book);
-  } catch (err) { next(err); }
-});
-
-// Unknown route -&gt; 404 in the same format
-app.use((req, res) =&gt; sendError(res, 404, `Route ${req.method} ${req.originalUrl} not found`));
-
-// Invalid JSON body and unexpected errors
-app.use((err, req, res, next) =&gt; {
-  if (err.type === "entity.parse.failed") return sendError(res, 400, "Invalid JSON in request body");
-  console.error(err);                                    // log details server-side only
-  sendError(res, 500, "Internal server error");
-});
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() =&gt; {
-    console.log("MongoDB connected");
-    app.listen(process.env.PORT || 3001, () =&gt; console.log("book-api running"));
-  })
-  .catch((err) =&gt; { console.error("MongoDB connection failed:", err.message); process.exit(1); });
-</pre><h2>course-api/.env.example</h2><pre># Copy this file to .env and fill in your own connection string. Do NOT commit .env.
-MONGO_URI=mongodb://127.0.0.1:27017/courseDB
-PORT=3000
-</pre><h2>course-api/.gitignore</h2><pre>node_modules
-.env
-</pre><h2>course-api/models/Course.js</h2><pre>const mongoose = require("mongoose");
-
-const courseSchema = new mongoose.Schema(
   {
-    courseCode: { type: String, required: [true, "courseCode is required"], unique: true, trim: true, uppercase: true },
-    courseName: { type: String, required: [true, "courseName is required"], trim: true },
-    department: { type: String, required: [true, "department is required"], trim: true },
-    credits:    { type: Number, required: [true, "credits is required"], min: [1, "credits must be at least 1"], max: 10 },
-    semester:   { type: Number, required: [true, "semester is required"], min: 1, max: 8 },
+    "id": 2,
+    "name": "Riya Mehta",
+    "department": "COMP",
+    "semester": 5
   },
-  { timestamps: true }
-);
-
-module.exports = mongoose.model("Course", courseSchema);
-</pre><h2>course-api/package.json</h2><pre>{ "name": "course-api", "version": "1.0.0", "main": "server.js", "scripts": { "start": "node server.js" }, "dependencies": { "dotenv": "^16.4.5", "express": "^4.21.2", "mongoose": "^8.9.0" } }
-</pre><h2>course-api/server.js</h2><pre>// Task 2: CRUD operations with MongoDB (Mongoose)
-require("dotenv").config();
-const express = require("express");
-const mongoose = require("mongoose");
-const Course = require("./models/Course");
-
-const app = express();
-app.use(express.json());
-
-const isValidId = (id) =&gt; mongoose.Types.ObjectId.isValid(id);
-
-// Convert Mongoose errors to a status code + message
-function handleError(res, err) {
-  if (err.name === "ValidationError") return res.status(400).json({ error: Object.values(err.errors).map((e) =&gt; e.message).join(", ") });
-  if (err.code === 11000) return res.status(400).json({ error: "courseCode already exists" });
-  console.error(err);                                    // details stay in the server log only
-  return res.status(500).json({ error: "Internal server error" });
-}
-
-// CREATE
-app.post("/courses", async (req, res) =&gt; {
-  try {
-    const course = await Course.create(req.body);
-    res.status(201).json(course);
-  } catch (err) { handleError(res, err); }
-});
-
-// READ all
-app.get("/courses", async (req, res) =&gt; {
-  try {
-    res.status(200).json(await Course.find());
-  } catch (err) { handleError(res, err); }
-});
-
-// READ one
-app.get("/courses/:id", async (req, res) =&gt; {
-  if (!isValidId(req.params.id)) return res.status(400).json({ error: "Invalid course id" });
-  try {
-    const course = await Course.findById(req.params.id);
-    if (!course) return res.status(404).json({ error: "Course not found" });
-    res.status(200).json(course);
-  } catch (err) { handleError(res, err); }
-});
-
-// UPDATE
-app.put("/courses/:id", async (req, res) =&gt; {
-  if (!isValidId(req.params.id)) return res.status(400).json({ error: "Invalid course id" });
-  try {
-    const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!course) return res.status(404).json({ error: "Course not found" });
-    res.status(200).json(course);
-  } catch (err) { handleError(res, err); }
-});
-
-// DELETE
-app.delete("/courses/:id", async (req, res) =&gt; {
-  if (!isValidId(req.params.id)) return res.status(400).json({ error: "Invalid course id" });
-  try {
-    const course = await Course.findByIdAndDelete(req.params.id);
-    if (!course) return res.status(404).json({ error: "Course not found" });
-    res.status(200).json({ message: "Course deleted", id: course._id });
-  } catch (err) { handleError(res, err); }
-});
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() =&gt; {
-    console.log("MongoDB connected");
-    app.listen(process.env.PORT || 3000, () =&gt; console.log("course-api running"));
-  })
-  .catch((err) =&gt; { console.error("MongoDB connection failed:", err.message); process.exit(1); });
-</pre><h2>student-api/package.json</h2><pre>{ "name": "student-api", "version": "1.0.0", "main": "server.js", "scripts": { "start": "node server.js" }, "dependencies": { "express": "^4.21.2" } }
-</pre><h2>student-api/server.js</h2><pre>// Task 1: Basic REST API for student records (in-memory array)
-const express = require("express");
-const app = express();
-const PORT = 3000;
-
-app.use(express.json());   // parse JSON request bodies into req.body
-
-let students = [
-  { id: 1, name: "Aarav Shah",  department: "EXTC", semester: 5 },
-  { id: 2, name: "Riya Mehta",  department: "COMP", semester: 5 },
-  { id: 3, name: "Kabir Nair",  department: "EXTC", semester: 3 },
-  { id: 4, name: "Sneha Patil", department: "IT",   semester: 7 },
-  { id: 5, name: "Dev Joshi",   department: "COMP", semester: 1 },
-];
-let nextId = 6;
-
-// GET /students -&gt; all students (200)
-app.get("/students", (req, res) =&gt; {
-  res.status(200).json(students);
-});
-
-// GET /students/:id -&gt; one student (200) or 404
-app.get("/students/:id", (req, res) =&gt; {
-  const student = students.find((s) =&gt; s.id === Number(req.params.id));
-  if (!student) return res.status(404).json({ error: "Student not found" });
-  res.status(200).json(student);
-});
-
-// POST /students -&gt; create (201) or 400 when fields are missing
-app.post("/students", (req, res) =&gt; {
-  const { name, department, semester } = req.body;
-  if (!name || !department || semester === undefined) {
-    return res.status(400).json({ error: "name, department and semester are required" });
+  {
+    "id": 3,
+    "name": "Kabir Nair",
+    "department": "EXTC",
+    "semester": 3
+  },
+  {
+    "id": 4,
+    "name": "Sneha Patil",
+    "department": "IT",
+    "semester": 7
+  },
+  {
+    "id": 5,
+    "name": "Dev Joshi",
+    "department": "COMP",
+    "semester": 1
   }
-  const student = { id: nextId++, name, department, semester: Number(semester) };
-  students.push(student);
-  res.status(201).json(student);
-});
-
-app.listen(PORT, () =&gt; console.log(`student-api running on http://localhost:${PORT}`));
-</pre></body></html>
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /students/3<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "id": 3,
+  "name": "Kabir Nair",
+  "department": "EXTC",
+  "semester": 3
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /students/99<span class="s s4">404</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": "Student not found"
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /students<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+  "name": "Isha Rao",
+  "department": "IT",
+  "semester": "5"
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "id": 6,
+  "name": "Isha Rao",
+  "department": "IT",
+  "semester": 5
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /students<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
+  "name": "No Dept"
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": "name, department and semester are required"
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /students<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+  {
+    "id": 1,
+    "name": "Aarav Shah",
+    "department": "EXTC",
+    "semester": 5
+  },
+  {
+    "id": 2,
+    "name": "Riya Mehta",
+    "department": "COMP",
+    "semester": 5
+  },
+  {
+    "id": 3,
+    "name": "Kabir Nair",
+    "department": "EXTC",
+    "semester": 3
+  },
+  {
+    "id": 4,
+    "name": "Sneha Patil",
+    "department": "IT",
+    "semester": 7
+  },
+  {
+    "id": 5,
+    "name": "Dev Joshi",
+    "department": "COMP",
+    "semester": 1
+  },
+  {
+    "id": 6,
+    "name": "Isha Rao",
+    "department": "IT",
+    "semester": 5
+  }
+]</pre></div><h2>Task 2 – Course API (<code>course-api</code>, MongoDB CRUD)</h2><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+  "courseCode": "cs101",
+  "courseName": "Data Structures",
+  "department": "COMP",
+  "credits": 4,
+  "semester": 3
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "courseCode": "CS101",
+  "courseName": "Data Structures",
+  "department": "COMP",
+  "credits": 4,
+  "semester": 3,
+  "_id": "6af173271f3a6ce775c351ea",
+  "createdAt": "2026-11-09T07:15:51.853Z",
+  "updatedAt": "2026-11-09T07:15:51.853Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+  "courseCode": "ec201",
+  "courseName": "Digital Electronics",
+  "department": "EXTC",
+  "credits": 3,
+  "semester": 4
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "courseCode": "EC201",
+  "courseName": "Digital Electronics",
+  "department": "EXTC",
+  "credits": 3,
+  "semester": 4,
+  "_id": "6af173271f3a6ce775c351ec",
+  "createdAt": "2026-11-09T07:15:51.862Z",
+  "updatedAt": "2026-11-09T07:15:51.862Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
+  "courseCode": "CS101",
+  "courseName": "Duplicate",
+  "department": "COMP",
+  "credits": 4,
+  "semester": 3
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": "courseCode already exists"
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
+  "courseName": "Missing code",
+  "credits": 0,
+  "semester": 3
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": "department is required, courseCode is required, credits must be at least 1"
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+  {
+    "_id": "6af173271f3a6ce775c351ea",
+    "courseCode": "CS101",
+    "courseName": "Data Structures",
+    "department": "COMP",
+    "credits": 4,
+    "semester": 3,
+    "createdAt": "2026-11-09T07:15:51.853Z",
+    "updatedAt": "2026-11-09T07:15:51.853Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af173271f3a6ce775c351ec",
+    "courseCode": "EC201",
+    "courseName": "Digital Electronics",
+    "department": "EXTC",
+    "credits": 3,
+    "semester": 4,
+    "createdAt": "2026-11-09T07:15:51.862Z",
+    "updatedAt": "2026-11-09T07:15:51.862Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/6af173271f3a6ce775c351ea<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "_id": "6af173271f3a6ce775c351ea",
+  "courseCode": "CS101",
+  "courseName": "Data Structures",
+  "department": "COMP",
+  "credits": 4,
+  "semester": 3,
+  "createdAt": "2026-11-09T07:15:51.853Z",
+  "updatedAt": "2026-11-09T07:15:51.853Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">PUT</span> /courses/6af173271f3a6ce775c351ea<span class="s s2">200</span></div><div class="note">Request body</div><pre>{
+  "credits": 5
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "_id": "6af173271f3a6ce775c351ea",
+  "courseCode": "CS101",
+  "courseName": "Data Structures",
+  "department": "COMP",
+  "credits": 5,
+  "semester": 3,
+  "createdAt": "2026-11-09T07:15:51.853Z",
+  "updatedAt": "2026-11-09T07:15:51.922Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/xyz<span class="s s4">400</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": "Invalid course id"
+}</pre></div><div class="card"><div class="req"><span class="m">DELETE</span> /courses/6af173271f3a6ce775c351ea<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "message": "Course deleted",
+  "id": "6af173271f3a6ce775c351ea"
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/6af173271f3a6ce775c351ea<span class="s s4">404</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": "Course not found"
+}</pre></div><h2>Task 3 – Book API (<code>book-api</code>, filtering + validation)</h2><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+  "title": "Data Structures in C",
+  "author": "Rao",
+  "category": "Computer",
+  "publicationYear": 2018,
+  "availableCopies": 4
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "title": "Data Structures in C",
+  "author": "Rao",
+  "category": "Computer",
+  "publicationYear": 2018,
+  "availableCopies": 4,
+  "_id": "6af1732936686bd11e1f4cbc",
+  "createdAt": "2026-11-09T07:15:53.264Z",
+  "updatedAt": "2026-11-09T07:15:53.264Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+  "title": "Engineering Mathematics",
+  "author": "Kreyszig",
+  "category": "Mathematics",
+  "publicationYear": 2011,
+  "availableCopies": 0
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "title": "Engineering Mathematics",
+  "author": "Kreyszig",
+  "category": "Mathematics",
+  "publicationYear": 2011,
+  "availableCopies": 0,
+  "_id": "6af1732936686bd11e1f4cbe",
+  "createdAt": "2026-11-09T07:15:53.274Z",
+  "updatedAt": "2026-11-09T07:15:53.274Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+  "title": "Digital Electronics",
+  "author": "Morris Mano",
+  "category": "Science",
+  "publicationYear": 2015,
+  "availableCopies": 2
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "title": "Digital Electronics",
+  "author": "Morris Mano",
+  "category": "Science",
+  "publicationYear": 2015,
+  "availableCopies": 2,
+  "_id": "6af1732936686bd11e1f4cc0",
+  "createdAt": "2026-11-09T07:15:53.283Z",
+  "updatedAt": "2026-11-09T07:15:53.283Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
+  "title": "",
+  "author": "",
+  "publicationYear": 3000,
+  "availableCopies": -1
+}</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": {
+    "status": 400,
+    "message": "Validation failed",
+    "details": [
+      "title must not be empty",
+      "author must not be empty",
+      "publicationYear must be a valid year (1000-2026)",
+      "availableCopies must be a non-negative number"
+    ]
+  }
+}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s4">400</span></div><div class="note">Request body</div><pre>{bad json</pre><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": {
+    "status": 400,
+    "message": "Invalid JSON in request body"
+  }
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+  {
+    "_id": "6af1732936686bd11e1f4cbc",
+    "title": "Data Structures in C",
+    "author": "Rao",
+    "category": "Computer",
+    "publicationYear": 2018,
+    "availableCopies": 4,
+    "createdAt": "2026-11-09T07:15:53.264Z",
+    "updatedAt": "2026-11-09T07:15:53.264Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af1732936686bd11e1f4cbe",
+    "title": "Engineering Mathematics",
+    "author": "Kreyszig",
+    "category": "Mathematics",
+    "publicationYear": 2011,
+    "availableCopies": 0,
+    "createdAt": "2026-11-09T07:15:53.274Z",
+    "updatedAt": "2026-11-09T07:15:53.274Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af1732936686bd11e1f4cc0",
+    "title": "Digital Electronics",
+    "author": "Morris Mano",
+    "category": "Science",
+    "publicationYear": 2015,
+    "availableCopies": 2,
+    "createdAt": "2026-11-09T07:15:53.283Z",
+    "updatedAt": "2026-11-09T07:15:53.283Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books?category=computer<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+  {
+    "_id": "6af1732936686bd11e1f4cbc",
+    "title": "Data Structures in C",
+    "author": "Rao",
+    "category": "Computer",
+    "publicationYear": 2018,
+    "availableCopies": 4,
+    "createdAt": "2026-11-09T07:15:53.264Z",
+    "updatedAt": "2026-11-09T07:15:53.264Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books?author=kreys<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+  {
+    "_id": "6af1732936686bd11e1f4cbe",
+    "title": "Engineering Mathematics",
+    "author": "Kreyszig",
+    "category": "Mathematics",
+    "publicationYear": 2011,
+    "availableCopies": 0,
+    "createdAt": "2026-11-09T07:15:53.274Z",
+    "updatedAt": "2026-11-09T07:15:53.274Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books?category=Science&amp;author=mano<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+  {
+    "_id": "6af1732936686bd11e1f4cc0",
+    "title": "Digital Electronics",
+    "author": "Morris Mano",
+    "category": "Science",
+    "publicationYear": 2015,
+    "availableCopies": 2,
+    "createdAt": "2026-11-09T07:15:53.283Z",
+    "updatedAt": "2026-11-09T07:15:53.283Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books/6af1732936686bd11e1f4cbc<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "_id": "6af1732936686bd11e1f4cbc",
+  "title": "Data Structures in C",
+  "author": "Rao",
+  "category": "Computer",
+  "publicationYear": 2018,
+  "availableCopies": 4,
+  "createdAt": "2026-11-09T07:15:53.264Z",
+  "updatedAt": "2026-11-09T07:15:53.264Z",
+  "__v": 0
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books/123<span class="s s4">400</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": {
+    "status": 400,
+    "message": "Invalid book id"
+  }
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books/64b7f0c2a1b2c3d4e5f60718<span class="s s4">404</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": {
+    "status": 404,
+    "message": "Book not found"
+  }
+}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /nothing<span class="s s4">404</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "error": {
+    "status": 404,
+    "message": "Route GET /nothing not found"
+  }
+}</pre></div></body></html>
