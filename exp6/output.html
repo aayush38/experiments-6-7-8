@@ -1,0 +1,87 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment 6 – Output</title><style>:root{--bg:#f5f6f8;--fg:#1c1f24;--card:#fff;--bd:#d8dce2;--code:#14171c;--codefg:#e6e6e6;--ok:#1a7f37;--err:#b42318;--db:#0b6e4f}
+@media(prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e6e8eb;--card:#1d2127;--bd:#333a44;--code:#0b0d10}}
+body{font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--fg);max-width:920px;margin:0 auto;padding:16px 16px 60px;line-height:1.5}
+nav a{margin-right:14px}h1{font-size:1.5rem}h2{font-size:1.1rem;margin-top:32px;padding-top:8px;border-top:1px solid var(--bd)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin:12px 0}
+.req{font-family:ui-monospace,Consolas,monospace;font-size:.9rem;word-break:break-all}
+.m{font-weight:700}.s{display:inline-block;padding:0 8px;border-radius:10px;color:#fff;font-size:.8rem;margin-left:8px}
+.s2{background:var(--ok)}.s4{background:var(--err)}
+pre{background:var(--code);color:var(--codefg);padding:10px 12px;overflow:auto;border-radius:6px;font-size:.85rem;margin:8px 0 0;white-space:pre-wrap;word-break:break-word}
+iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;background:#fff;margin-top:8px}
+.note{font-size:.85rem;opacity:.75}.dbl{color:var(--db);font-weight:700;font-size:.85rem;margin-top:8px}</style></head><body><nav><a href="../">Home</a><a href="../exp6/">Exp 6</a><a href="../exp7/">Exp 7</a><a href="../exp8/">Exp 8</a></nav><h1>Experiment 6 – Output</h1><p class="note">Output of the code in the experiment folder, run with Node.js. Labels follow the lab manual.</p>
+<p><b>Generated website:</b> <a href="index.html">Express + EJS catalogue (Exp 6)</a></p>
+<h2>Output 1a &ndash; node 1_http_basic_server.js</h2><div class="card"><div class="req">$ node 1_http_basic_server.js</div><pre>Basic http server running at http://localhost:3000/
+Request received: GET /
+Request received: GET /home
+Request received: GET /api/books
+Request received: GET /nope</pre></div><h2>Output 1b &ndash; http://localhost:3000/ (HTML route)</h2><div class="card"><div class="req"><span class="m">GET</span> /<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><iframe src="http/home.html" loading="lazy"></iframe></div><h2>Output 1c &ndash; http://localhost:3000/api/books (JSON route, fs.readFile callback)</h2><div class="card"><div class="req"><span class="m">GET</span> /api/books<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+  {
+    "bookId": "LIB-101",
+    "title": "Data Structures in C",
+    "author": "Rao",
+    "category": "Computer",
+    "copies": 4,
+    "issueDate": "2026-09-01"
+  },
+  {
+    "bookId": "LIB-102",
+    "title": "Engineering Mathematics",
+    "author": "Kreyszig",
+    "category": "Mathematics",
+    "copies": 0,
+    "issueDate": "2026-09-03"
+  },
+  {
+    "bookId": "LIB-103",
+    "title": "Digital Electronics",
+    "author": "Morris Mano",
+    "category": "Electronics",
+    "copies": 2,
+    "issueDate": "2026-09-05"
+  },
+  {
+    "bookId": "LIB-104",
+    "title": "Operating System Concepts",
+    "author": "Silberschatz",
+    "category": "Computer",
+    "copies": 6,
+    "issueDate": "2026-09-08"
+  }
+]</pre></div><h2>Output 1d &ndash; http://localhost:3000/nope (404 route)</h2><div class="card"><div class="req"><span class="m">GET</span> /nope<span class="s s4">404</span></div><div class="note" style="margin-top:6px">Response</div><pre>404 - Route not found</pre></div><h2>Output 2 &ndash; node 2_file_sync.js</h2><div class="card"><div class="req">$ node 2_file_sync.js</div><pre>1. Writing file synchronously...
+2. Write finished.
+3. Reading file synchronously...
+4. Read finished. Contents:
+{
+  "bookId": "LIB-101",
+  "issuedTo": "Student-55",
+  "time": "2026-11-09T07:16:56.087Z"
+}
+5. This line runs only after both operations complete (blocking).</pre></div><h2>Output 3 &ndash; node 3_file_async.js</h2><p class="note">Line 2 prints before the write callback.</p><div class="card"><div class="req">$ node 3_file_async.js</div><pre>1. Starting asynchronous write...
+2. This line runs immediately, before the write finishes.
+3. Write finished (callback fired).
+4. Starting asynchronous read...
+5. Read finished (callback fired). Contents:
+{
+  "bookId": "LIB-103",
+  "issuedTo": "Student-56",
+  "time": "2026-11-09T07:16:56.162Z"
+}</pre></div><h2>Output 4 &ndash; node 4_custom_module_demo.js</h2><div class="card"><div class="req">$ node 4_custom_module_demo.js</div><pre>=== Custom Module Demo: mathUtils.js ===
+
+add(12, 8)            = 20
+average([4,2,6,0])    = 3
+factorial(5)          = 120
+isPrime(17)           = true
+isPrime(18)           = false
+gcd(48, 18)           = 6
+fibonacci(8)          = [
+  0, 1, 1,  2,
+  3, 5, 8, 13
+]
+lateFine(12 days)     = Rs. 10</pre></div><h2>Output 5 &ndash; Express basic routing (index.js)</h2><div class="card"><div class="req"><span class="m">GET</span> /hello<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>Hello world</pre></div><div class="card"><div class="req"><span class="m">POST</span> /hello<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>You just called the POST method at '/hello'!</pre></div><div class="card"><div class="req"><span class="m">GET</span> /test<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>HTTP method doesn't have an effect on this route!</pre></div><div class="card"><div class="req"><span class="m">POST</span> /test<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>HTTP method doesn't have an effect on this route!</pre></div><h2>Output 6 &ndash; Express + EJS application (http://localhost:3001)</h2><div class="card"><div class="note"><b>Catalogue page (index.ejs + style.css)</b></div><div class="req"><span class="m">GET</span> /<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><iframe src="index.html" loading="lazy"></iframe></div><div class="card"><div class="note"><b>Book details page (book.ejs)</b></div><div class="req"><span class="m">GET</span> /books/LIB-101<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><iframe src="books/LIB-101.html" loading="lazy"></iframe></div><div class="card"><div class="note"><b>JSON response</b></div><div class="req"><span class="m">GET</span> /api/books/LIB-103<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "bookId": "LIB-103",
+  "title": "Digital Electronics",
+  "author": "Morris Mano",
+  "category": "Electronics",
+  "copies": 2,
+  "issueDate": "2026-09-05"
+}</pre></div></body></html>

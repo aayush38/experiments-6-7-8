@@ -1,15 +1,15 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment 8 – REST API output</title><style>:root{--bg:#f5f6f8;--fg:#1c1f24;--card:#fff;--bd:#d8dce2;--code:#14171c;--codefg:#e6e6e6;--ok:#1a7f37;--err:#b42318}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment 8 – RESTful API Output</title><style>:root{--bg:#f5f6f8;--fg:#1c1f24;--card:#fff;--bd:#d8dce2;--code:#14171c;--codefg:#e6e6e6;--ok:#1a7f37;--err:#b42318;--db:#0b6e4f}
 @media(prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e6e8eb;--card:#1d2127;--bd:#333a44;--code:#0b0d10}}
 body{font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--fg);max-width:920px;margin:0 auto;padding:16px 16px 60px;line-height:1.5}
-nav a{margin-right:14px}h1{font-size:1.5rem}h2{font-size:1.1rem;margin-top:32px}
+nav a{margin-right:14px}h1{font-size:1.5rem}h2{font-size:1.1rem;margin-top:32px;padding-top:8px;border-top:1px solid var(--bd)}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin:12px 0}
 .req{font-family:ui-monospace,Consolas,monospace;font-size:.9rem;word-break:break-all}
 .m{font-weight:700}.s{display:inline-block;padding:0 8px;border-radius:10px;color:#fff;font-size:.8rem;margin-left:8px}
 .s2{background:var(--ok)}.s4{background:var(--err)}
 pre{background:var(--code);color:var(--codefg);padding:10px 12px;overflow:auto;border-radius:6px;font-size:.85rem;margin:8px 0 0;white-space:pre-wrap;word-break:break-word}
 iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;background:#fff;margin-top:8px}
-.note{font-size:.85rem;opacity:.75}</style></head><body><nav><a href="../">Home</a><a href="../exp6/">Exp 6</a><a href="../exp7/">Exp 7</a><a href="../exp8/">Exp 8</a></nav><h1>Experiment 8 – REST API output</h1><p>Output of the three APIs in <code>experiments_6_7_8_code/exp8</code>, each started with Node.js and called with real requests.</p>
-<h2>Task 1 – Student API (<code>student-api</code>, in-memory)</h2><div class="card"><div class="req"><span class="m">GET</span> /students<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
+.note{font-size:.85rem;opacity:.75}.dbl{color:var(--db);font-weight:700;font-size:.85rem;margin-top:8px}</style></head><body><nav><a href="../">Home</a><a href="../exp6/">Exp 6</a><a href="../exp7/">Exp 7</a><a href="../exp8/">Exp 8</a></nav><h1>Experiment 8 – RESTful API Output</h1><p class="note">Each request below was sent to the running API from the experiment folder. For every request: endpoint and method, request body or query parameters, status code and JSON response. For create, update and delete operations the database result is shown too.</p>
+<h2>Task 1 &ndash; Basic REST API for Student Records (student-api, in-memory array)</h2><div class="card"><div class="req"><span class="m">GET</span> /students<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
   {
     "id": 1,
     "name": "Aarav Shah",
@@ -97,7 +97,7 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
     "department": "IT",
     "semester": 5
   }
-]</pre></div><h2>Task 2 – Course API (<code>course-api</code>, MongoDB CRUD)</h2><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+]</pre></div><h2>Task 2 &ndash; CRUD operations with MongoDB (course-api)</h2><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
   "courseCode": "cs101",
   "courseName": "Data Structures",
   "department": "COMP",
@@ -109,11 +109,23 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
   "department": "COMP",
   "credits": 4,
   "semester": 3,
-  "_id": "6af173271f3a6ce775c351ea",
-  "createdAt": "2026-11-09T07:15:51.853Z",
-  "updatedAt": "2026-11-09T07:15:51.853Z",
+  "_id": "6af1765d051b8f5fe9a135fb",
+  "createdAt": "2026-11-09T07:29:33.879Z",
+  "updatedAt": "2026-11-09T07:29:33.879Z",
   "__v": 0
-}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+}</pre><div class="dbl">Database result &ndash; db.courses.find() (1 document)</div><pre>[
+  {
+    "_id": "6af1765d051b8f5fe9a135fb",
+    "courseCode": "CS101",
+    "courseName": "Data Structures",
+    "department": "COMP",
+    "credits": 4,
+    "semester": 3,
+    "createdAt": "2026-11-09T07:29:33.879Z",
+    "updatedAt": "2026-11-09T07:29:33.879Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
   "courseCode": "ec201",
   "courseName": "Digital Electronics",
   "department": "EXTC",
@@ -125,11 +137,34 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
   "department": "EXTC",
   "credits": 3,
   "semester": 4,
-  "_id": "6af173271f3a6ce775c351ec",
-  "createdAt": "2026-11-09T07:15:51.862Z",
-  "updatedAt": "2026-11-09T07:15:51.862Z",
+  "_id": "6af1765d051b8f5fe9a135fd",
+  "createdAt": "2026-11-09T07:29:33.905Z",
+  "updatedAt": "2026-11-09T07:29:33.905Z",
   "__v": 0
-}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
+}</pre><div class="dbl">Database result &ndash; db.courses.find() (2 documents)</div><pre>[
+  {
+    "_id": "6af1765d051b8f5fe9a135fb",
+    "courseCode": "CS101",
+    "courseName": "Data Structures",
+    "department": "COMP",
+    "credits": 4,
+    "semester": 3,
+    "createdAt": "2026-11-09T07:29:33.879Z",
+    "updatedAt": "2026-11-09T07:29:33.879Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af1765d051b8f5fe9a135fd",
+    "courseCode": "EC201",
+    "courseName": "Digital Electronics",
+    "department": "EXTC",
+    "credits": 3,
+    "semester": 4,
+    "createdAt": "2026-11-09T07:29:33.905Z",
+    "updatedAt": "2026-11-09T07:29:33.905Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">POST</span> /courses<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
   "courseCode": "CS101",
   "courseName": "Duplicate",
   "department": "COMP",
@@ -145,57 +180,92 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
   "error": "department is required, courseCode is required, credits must be at least 1"
 }</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
   {
-    "_id": "6af173271f3a6ce775c351ea",
+    "_id": "6af1765d051b8f5fe9a135fb",
     "courseCode": "CS101",
     "courseName": "Data Structures",
     "department": "COMP",
     "credits": 4,
     "semester": 3,
-    "createdAt": "2026-11-09T07:15:51.853Z",
-    "updatedAt": "2026-11-09T07:15:51.853Z",
+    "createdAt": "2026-11-09T07:29:33.879Z",
+    "updatedAt": "2026-11-09T07:29:33.879Z",
     "__v": 0
   },
   {
-    "_id": "6af173271f3a6ce775c351ec",
+    "_id": "6af1765d051b8f5fe9a135fd",
     "courseCode": "EC201",
     "courseName": "Digital Electronics",
     "department": "EXTC",
     "credits": 3,
     "semester": 4,
-    "createdAt": "2026-11-09T07:15:51.862Z",
-    "updatedAt": "2026-11-09T07:15:51.862Z",
+    "createdAt": "2026-11-09T07:29:33.905Z",
+    "updatedAt": "2026-11-09T07:29:33.905Z",
     "__v": 0
   }
-]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/6af173271f3a6ce775c351ea<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
-  "_id": "6af173271f3a6ce775c351ea",
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/6af1765d051b8f5fe9a135fb<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "_id": "6af1765d051b8f5fe9a135fb",
   "courseCode": "CS101",
   "courseName": "Data Structures",
   "department": "COMP",
   "credits": 4,
   "semester": 3,
-  "createdAt": "2026-11-09T07:15:51.853Z",
-  "updatedAt": "2026-11-09T07:15:51.853Z",
+  "createdAt": "2026-11-09T07:29:33.879Z",
+  "updatedAt": "2026-11-09T07:29:33.879Z",
   "__v": 0
-}</pre></div><div class="card"><div class="req"><span class="m">PUT</span> /courses/6af173271f3a6ce775c351ea<span class="s s2">200</span></div><div class="note">Request body</div><pre>{
+}</pre></div><div class="card"><div class="req"><span class="m">PUT</span> /courses/6af1765d051b8f5fe9a135fb<span class="s s2">200</span></div><div class="note">Request body</div><pre>{
   "credits": 5
 }</pre><div class="note" style="margin-top:6px">Response</div><pre>{
-  "_id": "6af173271f3a6ce775c351ea",
+  "_id": "6af1765d051b8f5fe9a135fb",
   "courseCode": "CS101",
   "courseName": "Data Structures",
   "department": "COMP",
   "credits": 5,
   "semester": 3,
-  "createdAt": "2026-11-09T07:15:51.853Z",
-  "updatedAt": "2026-11-09T07:15:51.922Z",
+  "createdAt": "2026-11-09T07:29:33.879Z",
+  "updatedAt": "2026-11-09T07:29:33.957Z",
   "__v": 0
-}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/xyz<span class="s s4">400</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+}</pre><div class="dbl">Database result &ndash; db.courses.find() (2 documents)</div><pre>[
+  {
+    "_id": "6af1765d051b8f5fe9a135fb",
+    "courseCode": "CS101",
+    "courseName": "Data Structures",
+    "department": "COMP",
+    "credits": 5,
+    "semester": 3,
+    "createdAt": "2026-11-09T07:29:33.879Z",
+    "updatedAt": "2026-11-09T07:29:33.957Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af1765d051b8f5fe9a135fd",
+    "courseCode": "EC201",
+    "courseName": "Digital Electronics",
+    "department": "EXTC",
+    "credits": 3,
+    "semester": 4,
+    "createdAt": "2026-11-09T07:29:33.905Z",
+    "updatedAt": "2026-11-09T07:29:33.905Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/xyz<span class="s s4">400</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
   "error": "Invalid course id"
-}</pre></div><div class="card"><div class="req"><span class="m">DELETE</span> /courses/6af173271f3a6ce775c351ea<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+}</pre></div><div class="card"><div class="req"><span class="m">DELETE</span> /courses/6af1765d051b8f5fe9a135fb<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
   "message": "Course deleted",
-  "id": "6af173271f3a6ce775c351ea"
-}</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/6af173271f3a6ce775c351ea<span class="s s4">404</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "id": "6af1765d051b8f5fe9a135fb"
+}</pre><div class="dbl">Database result &ndash; db.courses.find() (1 document)</div><pre>[
+  {
+    "_id": "6af1765d051b8f5fe9a135fd",
+    "courseCode": "EC201",
+    "courseName": "Digital Electronics",
+    "department": "EXTC",
+    "credits": 3,
+    "semester": 4,
+    "createdAt": "2026-11-09T07:29:33.905Z",
+    "updatedAt": "2026-11-09T07:29:33.905Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /courses/6af1765d051b8f5fe9a135fb<span class="s s4">404</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
   "error": "Course not found"
-}</pre></div><h2>Task 3 – Book API (<code>book-api</code>, filtering + validation)</h2><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+}</pre></div><h2>Task 3 &ndash; Book Catalogue API with filtering and validation (book-api)</h2><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
   "title": "Data Structures in C",
   "author": "Rao",
   "category": "Computer",
@@ -207,11 +277,23 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
   "category": "Computer",
   "publicationYear": 2018,
   "availableCopies": 4,
-  "_id": "6af1732936686bd11e1f4cbc",
-  "createdAt": "2026-11-09T07:15:53.264Z",
-  "updatedAt": "2026-11-09T07:15:53.264Z",
+  "_id": "6af1765f86595f4c42085589",
+  "createdAt": "2026-11-09T07:29:35.511Z",
+  "updatedAt": "2026-11-09T07:29:35.511Z",
   "__v": 0
-}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+}</pre><div class="dbl">Database result &ndash; db.books.find() (1 document)</div><pre>[
+  {
+    "_id": "6af1765f86595f4c42085589",
+    "title": "Data Structures in C",
+    "author": "Rao",
+    "category": "Computer",
+    "publicationYear": 2018,
+    "availableCopies": 4,
+    "createdAt": "2026-11-09T07:29:35.511Z",
+    "updatedAt": "2026-11-09T07:29:35.511Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
   "title": "Engineering Mathematics",
   "author": "Kreyszig",
   "category": "Mathematics",
@@ -223,11 +305,34 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
   "category": "Mathematics",
   "publicationYear": 2011,
   "availableCopies": 0,
-  "_id": "6af1732936686bd11e1f4cbe",
-  "createdAt": "2026-11-09T07:15:53.274Z",
-  "updatedAt": "2026-11-09T07:15:53.274Z",
+  "_id": "6af1765f86595f4c4208558b",
+  "createdAt": "2026-11-09T07:29:35.525Z",
+  "updatedAt": "2026-11-09T07:29:35.525Z",
   "__v": 0
-}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
+}</pre><div class="dbl">Database result &ndash; db.books.find() (2 documents)</div><pre>[
+  {
+    "_id": "6af1765f86595f4c42085589",
+    "title": "Data Structures in C",
+    "author": "Rao",
+    "category": "Computer",
+    "publicationYear": 2018,
+    "availableCopies": 4,
+    "createdAt": "2026-11-09T07:29:35.511Z",
+    "updatedAt": "2026-11-09T07:29:35.511Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af1765f86595f4c4208558b",
+    "title": "Engineering Mathematics",
+    "author": "Kreyszig",
+    "category": "Mathematics",
+    "publicationYear": 2011,
+    "availableCopies": 0,
+    "createdAt": "2026-11-09T07:29:35.525Z",
+    "updatedAt": "2026-11-09T07:29:35.525Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s2">201</span></div><div class="note">Request body</div><pre>{
   "title": "Digital Electronics",
   "author": "Morris Mano",
   "category": "Science",
@@ -239,11 +344,45 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
   "category": "Science",
   "publicationYear": 2015,
   "availableCopies": 2,
-  "_id": "6af1732936686bd11e1f4cc0",
-  "createdAt": "2026-11-09T07:15:53.283Z",
-  "updatedAt": "2026-11-09T07:15:53.283Z",
+  "_id": "6af1765f86595f4c4208558d",
+  "createdAt": "2026-11-09T07:29:35.532Z",
+  "updatedAt": "2026-11-09T07:29:35.532Z",
   "__v": 0
-}</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
+}</pre><div class="dbl">Database result &ndash; db.books.find() (3 documents)</div><pre>[
+  {
+    "_id": "6af1765f86595f4c42085589",
+    "title": "Data Structures in C",
+    "author": "Rao",
+    "category": "Computer",
+    "publicationYear": 2018,
+    "availableCopies": 4,
+    "createdAt": "2026-11-09T07:29:35.511Z",
+    "updatedAt": "2026-11-09T07:29:35.511Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af1765f86595f4c4208558b",
+    "title": "Engineering Mathematics",
+    "author": "Kreyszig",
+    "category": "Mathematics",
+    "publicationYear": 2011,
+    "availableCopies": 0,
+    "createdAt": "2026-11-09T07:29:35.525Z",
+    "updatedAt": "2026-11-09T07:29:35.525Z",
+    "__v": 0
+  },
+  {
+    "_id": "6af1765f86595f4c4208558d",
+    "title": "Digital Electronics",
+    "author": "Morris Mano",
+    "category": "Science",
+    "publicationYear": 2015,
+    "availableCopies": 2,
+    "createdAt": "2026-11-09T07:29:35.532Z",
+    "updatedAt": "2026-11-09T07:29:35.532Z",
+    "__v": 0
+  }
+]</pre></div><div class="card"><div class="req"><span class="m">POST</span> /books<span class="s s4">400</span></div><div class="note">Request body</div><pre>{
   "title": "",
   "author": "",
   "publicationYear": 3000,
@@ -266,83 +405,83 @@ iframe{width:100%;height:260px;border:1px solid var(--bd);border-radius:6px;back
   }
 }</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
   {
-    "_id": "6af1732936686bd11e1f4cbc",
+    "_id": "6af1765f86595f4c42085589",
     "title": "Data Structures in C",
     "author": "Rao",
     "category": "Computer",
     "publicationYear": 2018,
     "availableCopies": 4,
-    "createdAt": "2026-11-09T07:15:53.264Z",
-    "updatedAt": "2026-11-09T07:15:53.264Z",
+    "createdAt": "2026-11-09T07:29:35.511Z",
+    "updatedAt": "2026-11-09T07:29:35.511Z",
     "__v": 0
   },
   {
-    "_id": "6af1732936686bd11e1f4cbe",
+    "_id": "6af1765f86595f4c4208558b",
     "title": "Engineering Mathematics",
     "author": "Kreyszig",
     "category": "Mathematics",
     "publicationYear": 2011,
     "availableCopies": 0,
-    "createdAt": "2026-11-09T07:15:53.274Z",
-    "updatedAt": "2026-11-09T07:15:53.274Z",
+    "createdAt": "2026-11-09T07:29:35.525Z",
+    "updatedAt": "2026-11-09T07:29:35.525Z",
     "__v": 0
   },
   {
-    "_id": "6af1732936686bd11e1f4cc0",
+    "_id": "6af1765f86595f4c4208558d",
     "title": "Digital Electronics",
     "author": "Morris Mano",
     "category": "Science",
     "publicationYear": 2015,
     "availableCopies": 2,
-    "createdAt": "2026-11-09T07:15:53.283Z",
-    "updatedAt": "2026-11-09T07:15:53.283Z",
+    "createdAt": "2026-11-09T07:29:35.532Z",
+    "updatedAt": "2026-11-09T07:29:35.532Z",
     "__v": 0
   }
 ]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books?category=computer<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
   {
-    "_id": "6af1732936686bd11e1f4cbc",
+    "_id": "6af1765f86595f4c42085589",
     "title": "Data Structures in C",
     "author": "Rao",
     "category": "Computer",
     "publicationYear": 2018,
     "availableCopies": 4,
-    "createdAt": "2026-11-09T07:15:53.264Z",
-    "updatedAt": "2026-11-09T07:15:53.264Z",
+    "createdAt": "2026-11-09T07:29:35.511Z",
+    "updatedAt": "2026-11-09T07:29:35.511Z",
     "__v": 0
   }
 ]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books?author=kreys<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
   {
-    "_id": "6af1732936686bd11e1f4cbe",
+    "_id": "6af1765f86595f4c4208558b",
     "title": "Engineering Mathematics",
     "author": "Kreyszig",
     "category": "Mathematics",
     "publicationYear": 2011,
     "availableCopies": 0,
-    "createdAt": "2026-11-09T07:15:53.274Z",
-    "updatedAt": "2026-11-09T07:15:53.274Z",
+    "createdAt": "2026-11-09T07:29:35.525Z",
+    "updatedAt": "2026-11-09T07:29:35.525Z",
     "__v": 0
   }
 ]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books?category=Science&amp;author=mano<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>[
   {
-    "_id": "6af1732936686bd11e1f4cc0",
+    "_id": "6af1765f86595f4c4208558d",
     "title": "Digital Electronics",
     "author": "Morris Mano",
     "category": "Science",
     "publicationYear": 2015,
     "availableCopies": 2,
-    "createdAt": "2026-11-09T07:15:53.283Z",
-    "updatedAt": "2026-11-09T07:15:53.283Z",
+    "createdAt": "2026-11-09T07:29:35.532Z",
+    "updatedAt": "2026-11-09T07:29:35.532Z",
     "__v": 0
   }
-]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books/6af1732936686bd11e1f4cbc<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
-  "_id": "6af1732936686bd11e1f4cbc",
+]</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books/6af1765f86595f4c42085589<span class="s s2">200</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
+  "_id": "6af1765f86595f4c42085589",
   "title": "Data Structures in C",
   "author": "Rao",
   "category": "Computer",
   "publicationYear": 2018,
   "availableCopies": 4,
-  "createdAt": "2026-11-09T07:15:53.264Z",
-  "updatedAt": "2026-11-09T07:15:53.264Z",
+  "createdAt": "2026-11-09T07:29:35.511Z",
+  "updatedAt": "2026-11-09T07:29:35.511Z",
   "__v": 0
 }</pre></div><div class="card"><div class="req"><span class="m">GET</span> /books/123<span class="s s4">400</span></div><div class="note" style="margin-top:6px">Response</div><pre>{
   "error": {
