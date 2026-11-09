@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Application Form</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 30px; }
+    form { max-width: 520px; margin: auto; background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #d5dbe3; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 18px; padding: 10px 20px; background: #1a3c6e; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <form action="/apply" method="POST">
+    <h2>Student Application Form</h2>
+    <label>Full Name</label><input type="text" name="fullName" required>
+    <label>Email</label><input type="email" name="email" required>
+    <label>Phone (10 digits)</label><input type="text" name="phone" pattern="[0-9]{10}" required>
+    <label>Date of Birth</label><input type="date" name="dob" required>
+    <label>Gender</label>
+    <select name="gender" required><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select>
+    <label>Course</label>
+    <select name="course" required>
+      <option value="">Select</option>
+      <option>Computer Engineering</option>
+      <option>Electronics and Computer Engineering</option>
+      <option>Information Technology</option>
+    </select>
+    <label>Previous Percentage</label><input type="number" name="percentage" min="0" max="100" step="0.01" required>
+    <label>Address</label><textarea name="address" rows="3"></textarea>
+    <button type="submit">Submit Application</button>
+  </form>
+</body>
+</html>

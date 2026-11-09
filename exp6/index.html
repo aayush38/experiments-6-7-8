@@ -1,0 +1,233 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment 6 – Node.js (HTTP server, fs, modules, Express)</title><style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:16px;background:#fafafa;color:#222}pre{background:#1e1e1e;color:#ddd;padding:12px;overflow:auto;border-radius:6px}h2{font-size:1rem;font-family:monospace;margin-top:28px}nav a{margin-right:12px}</style></head><body><nav><a href="../">Home</a><a href="../exp6/">Exp 6</a><a href="../exp7/">Exp 7</a><a href="../exp8/">Exp 8</a></nav><h1>Experiment 6 – Node.js (HTTP server, fs, modules, Express)</h1><p>Source code. These are server-side apps, so they are shown here rather than run.</p><h2>1_http_basic_server.js</h2><pre>// Basic Node.js server using the built-in http module.
+// Demonstrates: basic routing, serving HTML / JSON, and a callback (fs.readFile).
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+
+const PORT = 3000;
+const booksFile = path.join(__dirname, "data", "books.json");
+
+const server = http.createServer((req, res) =&gt; {
+  console.log(`Request received: ${req.method} ${req.url}`);
+
+  if (req.url === "/" || req.url === "/home") {
+    // Route 1: simple HTML page
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(`
+      &lt;html&gt;
+        &lt;head&gt;&lt;title&gt;Campus Library - Node HTTP Server&lt;/title&gt;&lt;/head&gt;
+        &lt;body&gt;
+          &lt;h1&gt;Campus Library Catalogue&lt;/h1&gt;
+          &lt;p&gt;Basic Node.js http server is running.&lt;/p&gt;
+          &lt;p&gt;Try &lt;a href="/api/books"&gt;/api/books&lt;/a&gt; for the JSON catalogue.&lt;/p&gt;
+        &lt;/body&gt;
+      &lt;/html&gt;`);
+  } else if (req.url === "/api/books") {
+    // Route 2: JSON data. fs.readFile takes a CALLBACK that runs when the file has been read.
+    fs.readFile(booksFile, "utf-8", (err, data) =&gt; {
+      if (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Could not read book data" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(data);
+    });
+  } else {
+    // Any other URL
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("404 - Route not found");
+  }
+});
+
+server.listen(PORT, () =&gt; {
+  console.log(`Basic http server running at http://localhost:${PORT}/`);
+});
+</pre><h2>2_file_sync.js</h2><pre>// Synchronous file operations: each call BLOCKS until it finishes.
+const fs = require("fs");
+const path = require("path");
+
+const filePath = path.join(__dirname, "data", "issue_log_sync.json");
+const record = { bookId: "LIB-101", issuedTo: "Student-55", time: new Date().toISOString() };
+
+console.log("1. Writing file synchronously...");
+fs.writeFileSync(filePath, JSON.stringify(record, null, 2));
+console.log("2. Write finished.");
+
+console.log("3. Reading file synchronously...");
+const content = fs.readFileSync(filePath, "utf-8");
+console.log("4. Read finished. Contents:");
+console.log(content);
+
+console.log("5. This line runs only after both operations complete (blocking).");
+</pre><h2>3_file_async.js</h2><pre>// Asynchronous file operations: calls return immediately, callbacks run later.
+const fs = require("fs");
+const path = require("path");
+
+const filePath = path.join(__dirname, "data", "issue_log_async.json");
+const record = { bookId: "LIB-103", issuedTo: "Student-56", time: new Date().toISOString() };
+
+console.log("1. Starting asynchronous write...");
+fs.writeFile(filePath, JSON.stringify(record, null, 2), (err) =&gt; {
+  if (err) throw err;
+  console.log("3. Write finished (callback fired).");
+
+  console.log("4. Starting asynchronous read...");
+  fs.readFile(filePath, "utf-8", (err, data) =&gt; {
+    if (err) throw err;
+    console.log("5. Read finished (callback fired). Contents:");
+    console.log(data);
+  });
+});
+
+console.log("2. This line runs immediately, before the write finishes.");
+</pre><h2>4_custom_module_demo.js</h2><pre>// Imports and uses the custom module.
+const m = require("./customModules/mathUtils");
+
+console.log("=== Custom Module Demo: mathUtils.js ===\n");
+console.log("add(12, 8)            =", m.add(12, 8));
+console.log("average([4,2,6,0])    =", m.average([4, 2, 6, 0]));
+console.log("factorial(5)          =", m.factorial(5));
+console.log("isPrime(17)           =", m.isPrime(17));
+console.log("isPrime(18)           =", m.isPrime(18));
+console.log("gcd(48, 18)           =", m.gcd(48, 18));
+console.log("fibonacci(8)          =", m.fibonacci(8));
+console.log("lateFine(12 days)     = Rs.", m.lateFine(12));
+</pre><h2>customModules/mathUtils.js</h2><pre>// Custom module containing reusable mathematical functions (CommonJS).
+function add(a, b) { return a + b; }
+function average(arr) { return arr.reduce((s, x) =&gt; s + x, 0) / arr.length; }
+function factorial(n) { return n &lt;= 1 ? 1 : n * factorial(n - 1); }
+function isPrime(n) {
+  if (n &lt; 2) return false;
+  for (let i = 2; i * i &lt;= n; i++) if (n % i === 0) return false;
+  return true;
+}
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+function fibonacci(n) {
+  const seq = [0, 1];
+  for (let i = 2; i &lt; n; i++) seq.push(seq[i - 1] + seq[i - 2]);
+  return seq.slice(0, n);
+}
+// Library-specific use of the module: late fine = Rs. 2 per day after 7 free days
+function lateFine(daysKept) { return daysKept &gt; 7 ? (daysKept - 7) * 2 : 0; }
+
+module.exports = { add, average, factorial, isPrime, gcd, fibonacci, lateFine };
+</pre><h2>data/books.json</h2><pre>[
+  { "bookId": "LIB-101", "title": "Data Structures in C", "author": "Rao", "category": "Computer", "copies": 4, "issueDate": "2026-09-01" },
+  { "bookId": "LIB-102", "title": "Engineering Mathematics", "author": "Kreyszig", "category": "Mathematics", "copies": 0, "issueDate": "2026-09-03" },
+  { "bookId": "LIB-103", "title": "Digital Electronics", "author": "Morris Mano", "category": "Electronics", "copies": 2, "issueDate": "2026-09-05" },
+  { "bookId": "LIB-104", "title": "Operating System Concepts", "author": "Silberschatz", "category": "Computer", "copies": 6, "issueDate": "2026-09-08" }
+]
+</pre><h2>expressApp/public/style.css</h2><pre>body { font-family: Arial, sans-serif; margin: 30px; background: #f4f6f9; }
+h1 { color: #1a3c6e; }
+.book-list { list-style: none; padding: 0; }
+.book-list li { background: #fff; margin: 8px 0; padding: 12px; border-radius: 6px; border: 1px solid #d5dbe3; }
+table { border-collapse: collapse; background: #fff; }
+td, th { border: 1px solid #aaa; padding: 8px 14px; }
+.out { color: #b00020; font-weight: bold; }
+.ok { color: #1b7f3b; font-weight: bold; }
+</pre><h2>expressApp/server.js</h2><pre>// Express app: routes + built-in static middleware + EJS template engine.
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
+const mathUtils = require("../customModules/mathUtils");
+
+const app = express();
+const PORT = 3001;
+
+// Built-in middleware: serve static files (CSS) from /public
+app.use(express.static(path.join(__dirname, "public")));
+
+// Template engine setup
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+
+const books = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "data", "books.json"), "utf-8")
+);
+const findBook = (id) =&gt; books.find((b) =&gt; b.bookId === id);
+
+// Dynamic page 1: catalogue
+app.get("/", (req, res) =&gt; {
+  res.render("index", { books });
+});
+
+// Dynamic page 2: details of one book (route parameter)
+app.get("/books/:id", (req, res) =&gt; {
+  const book = findBook(req.params.id);
+  if (!book) return res.status(404).send("Book not found");
+  const daysKept = Math.floor((Date.now() - new Date(book.issueDate)) / 86400000);
+  res.render("book", { book, daysKept, fine: mathUtils.lateFine(daysKept) });
+});
+
+// JSON API
+app.get("/api/books/:id", (req, res) =&gt; {
+  const book = findBook(req.params.id);
+  if (!book) return res.status(404).json({ error: "Book not found" });
+  res.json(book);
+});
+
+app.listen(PORT, () =&gt; console.log(`Express app running at http://localhost:${PORT}/`));
+</pre><h2>expressApp/views/book.ejs</h2><pre>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Book - &lt;%= book.bookId %&gt;&lt;/title&gt;
+  &lt;link rel="stylesheet" href="/style.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;a href="/"&gt;&amp;larr; Back to catalogue&lt;/a&gt;
+  &lt;h1&gt;&lt;%= book.title %&gt;&lt;/h1&gt;
+  &lt;table&gt;
+    &lt;tr&gt;&lt;th&gt;Book ID&lt;/th&gt;&lt;td&gt;&lt;%= book.bookId %&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;th&gt;Author&lt;/th&gt;&lt;td&gt;&lt;%= book.author %&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;th&gt;Category&lt;/th&gt;&lt;td&gt;&lt;%= book.category %&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;th&gt;Copies&lt;/th&gt;&lt;td&gt;&lt;%= book.copies %&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;th&gt;Issued on&lt;/th&gt;&lt;td&gt;&lt;%= book.issueDate %&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;th&gt;Days kept&lt;/th&gt;&lt;td&gt;&lt;%= daysKept %&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;th&gt;Late fine (custom module)&lt;/th&gt;&lt;td&gt;Rs. &lt;%= fine %&gt;&lt;/td&gt;&lt;/tr&gt;
+  &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre><h2>expressApp/views/index.ejs</h2><pre>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Campus Library - Catalogue&lt;/title&gt;
+  &lt;link rel="stylesheet" href="/style.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Campus Library Catalogue&lt;/h1&gt;
+  &lt;ul class="book-list"&gt;
+    &lt;% books.forEach(function(book) { %&gt;
+      &lt;li&gt;
+        &lt;strong&gt;&lt;%= book.title %&gt;&lt;/strong&gt; by &lt;%= book.author %&gt; (&lt;%= book.bookId %&gt;)
+        - &lt;span class="&lt;%= book.copies &gt; 0 ? 'ok' : 'out' %&gt;"&gt;&lt;%= book.copies &gt; 0 ? 'Available' : 'Out of stock' %&gt;&lt;/span&gt;
+        &lt;br&gt;&lt;a href="/books/&lt;%= book.bookId %&gt;"&gt;View details&lt;/a&gt;
+      &lt;/li&gt;
+    &lt;% }); %&gt;
+  &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre><h2>index.js</h2><pre>// Basic routing using Express.js (GET / POST / all)
+var express = require("express");
+var app = express();
+
+app.get("/hello", function (req, res) {
+  res.send("Hello world");
+});
+
+app.post("/hello", function (req, res) {
+  res.send("You just called the POST method at '/hello'!\n");
+});
+
+app.all("/test", function (req, res) {
+  res.send("HTTP method doesn't have an effect on this route!");
+});
+
+app.listen(3000, () =&gt; console.log("Express basic routing on http://localhost:3000"));
+</pre><h2>package.json</h2><pre>{
+  "name": "exp6-nodejs-express",
+  "version": "1.0.0",
+  "scripts": { "start": "node expressApp/server.js" },
+  "dependencies": { "ejs": "^3.1.10", "express": "^4.21.2" }
+}
+</pre></body></html>

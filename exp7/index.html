@@ -1,0 +1,258 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment 7 – MongoDB & Mongoose Student API</title><style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:16px;background:#fafafa;color:#222}pre{background:#1e1e1e;color:#ddd;padding:12px;overflow:auto;border-radius:6px}h2{font-size:1rem;font-family:monospace;margin-top:28px}nav a{margin-right:12px}</style></head><body><nav><a href="../">Home</a><a href="../exp6/">Exp 6</a><a href="../exp7/">Exp 7</a><a href="../exp8/">Exp 8</a></nav><h1>Experiment 7 – MongoDB & Mongoose Student API</h1><p>Source code. These are server-side apps, so they are shown here rather than run.</p><p><a href="apply.html">Open the static application form (apply.html)</a> – needs the backend to submit.</p><h2>.env.example</h2><pre># Copy to .env (never commit .env)
+MONGO_URI=mongodb://127.0.0.1:27017/college
+PORT=3000
+</pre><h2>models/Application.js</h2><pre>const mongoose = require("mongoose");
+
+// Student application (admission) form
+const applicationSchema = new mongoose.Schema(
+  {
+    fullName: { type: String, required: [true, "Full name is required"], trim: true },
+    email:    { type: String, required: [true, "Email is required"], trim: true, lowercase: true,
+                match: [/^\S+@\S+\.\S+$/, "Enter a valid email"] },
+    phone:    { type: String, required: true, match: [/^[0-9]{10}$/, "Phone must be 10 digits"] },
+    dob:      { type: Date, required: [true, "Date of birth is required"] },
+    gender:   { type: String, enum: ["Male", "Female", "Other"], required: true },
+    course:   { type: String, required: true, enum: ["Computer Engineering", "Electronics and Computer Engineering", "Information Technology"] },
+    percentage: { type: Number, required: true, min: 0, max: 100 },
+    address:  { type: String, trim: true },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Application", applicationSchema);
+</pre><h2>models/Student.js</h2><pre>const mongoose = require("mongoose");
+
+// Schema describes the structure and validation rules of a Student document
+const studentSchema = new mongoose.Schema(
+  {
+    rollNo:   { type: Number, required: [true, "Roll number is required"], unique: true },
+    name:     { type: String, required: [true, "Name is required"], trim: true },
+    dept:     { type: String, required: true, enum: ["COMP", "EXTC", "IT", "MECH"] },
+    semester: { type: Number, required: true, min: 1, max: 8 },
+    cgpa:     { type: Number, min: 0, max: 10, default: 0 },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Student", studentSchema);
+</pre><h2>mongo_shell.js</h2><pre>// MongoDB shell operations (run in mongosh:  mongosh  then  load("mongo_shell.js")  or paste line by line)
+use("college");
+db.students.drop();
+
+// ---- 1. Insert documents
+db.students.insertMany([
+  { rollNo: 1, name: "Aarav Shah",  dept: "EXTC", semester: 5, cgpa: 8.9, city: "Mumbai" },
+  { rollNo: 2, name: "Riya Mehta",  dept: "COMP", semester: 5, cgpa: 9.2, city: "Pune"   },
+  { rollNo: 3, name: "Kabir Nair",  dept: "EXTC", semester: 5, cgpa: 7.4, city: "Mumbai" },
+  { rollNo: 4, name: "Sneha Patil", dept: "COMP", semester: 3, cgpa: 8.1, city: "Nashik" },
+  { rollNo: 5, name: "Dev Joshi",   dept: "IT",   semester: 5, cgpa: 6.8, city: "Thane"  },
+  { rollNo: 6, name: "Meera Iyer",  dept: "EXTC", semester: 3, cgpa: 9.5, city: "Mumbai" }
+]);
+
+// ---- 2. Find (read)
+db.students.find();                                   // all documents
+db.students.find({ dept: "EXTC" });                   // equality
+db.students.findOne({ rollNo: 4 });                   // single document
+
+// ---- 3. Comparison operators
+db.students.find({ cgpa: { $gt: 8 } });               // greater than
+db.students.find({ cgpa: { $gte: 8.9 } });            // greater than or equal
+db.students.find({ cgpa: { $lt: 7.5 } });             // less than
+db.students.find({ dept: { $ne: "EXTC" } });          // not equal
+db.students.find({ city: { $in: ["Pune", "Nashik"] } });   // in list
+db.students.find({ semester: { $nin: [3] } });        // not in list
+
+// ---- 4. Logical operators
+db.students.find({ $and: [ { dept: "EXTC" }, { cgpa: { $gt: 9 } } ] });
+db.students.find({ $or:  [ { dept: "IT" }, { cgpa: { $gt: 9 } } ] });
+db.students.find({ cgpa: { $not: { $gt: 8 } } });
+db.students.find({ $nor: [ { dept: "COMP" }, { city: "Mumbai" } ] });
+
+// ---- 5. Projection (1 = include, 0 = exclude)
+db.students.find({}, { name: 1, cgpa: 1, _id: 0 });
+db.students.find({ dept: "EXTC" }, { _id: 0, city: 0 });
+
+// ---- 6. Sort, limit, count
+db.students.find({}, { name: 1, cgpa: 1, _id: 0 }).sort({ cgpa: -1 }).limit(3);
+db.students.countDocuments({ dept: "EXTC" });
+
+// ---- 7. Update
+db.students.updateOne({ rollNo: 5 }, { $set: { cgpa: 7.2, city: "Mumbai" } });
+db.students.updateMany({ semester: 3 }, { $inc: { semester: 1 } });   // semester 3 -&gt; 4
+db.students.updateOne({ rollNo: 7 }, { $set: { name: "Isha Rao", dept: "IT", semester: 5, cgpa: 8.0, city: "Pune" } }, { upsert: true });
+
+// ---- 8. Delete
+db.students.deleteOne({ rollNo: 7 });
+db.students.deleteMany({ cgpa: { $lt: 7.5 } });
+db.students.find({}, { _id: 0, rollNo: 1, name: 1, cgpa: 1 });
+</pre><h2>package.json</h2><pre>{
+  "name": "exp7-express-mongoose",
+  "version": "1.0.0",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "dotenv": "^16.4.5", "express": "^4.21.2", "mongoose": "^8.9.0" }
+}
+</pre><h2>public/apply.html</h2><pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Student Application Form&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 30px; }
+    form { max-width: 520px; margin: auto; background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #d5dbe3; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 18px; padding: 10px 20px; background: #1a3c6e; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;form action="/apply" method="POST"&gt;
+    &lt;h2&gt;Student Application Form&lt;/h2&gt;
+    &lt;label&gt;Full Name&lt;/label&gt;&lt;input type="text" name="fullName" required&gt;
+    &lt;label&gt;Email&lt;/label&gt;&lt;input type="email" name="email" required&gt;
+    &lt;label&gt;Phone (10 digits)&lt;/label&gt;&lt;input type="text" name="phone" pattern="[0-9]{10}" required&gt;
+    &lt;label&gt;Date of Birth&lt;/label&gt;&lt;input type="date" name="dob" required&gt;
+    &lt;label&gt;Gender&lt;/label&gt;
+    &lt;select name="gender" required&gt;&lt;option value=""&gt;Select&lt;/option&gt;&lt;option&gt;Male&lt;/option&gt;&lt;option&gt;Female&lt;/option&gt;&lt;option&gt;Other&lt;/option&gt;&lt;/select&gt;
+    &lt;label&gt;Course&lt;/label&gt;
+    &lt;select name="course" required&gt;
+      &lt;option value=""&gt;Select&lt;/option&gt;
+      &lt;option&gt;Computer Engineering&lt;/option&gt;
+      &lt;option&gt;Electronics and Computer Engineering&lt;/option&gt;
+      &lt;option&gt;Information Technology&lt;/option&gt;
+    &lt;/select&gt;
+    &lt;label&gt;Previous Percentage&lt;/label&gt;&lt;input type="number" name="percentage" min="0" max="100" step="0.01" required&gt;
+    &lt;label&gt;Address&lt;/label&gt;&lt;textarea name="address" rows="3"&gt;&lt;/textarea&gt;
+    &lt;button type="submit"&gt;Submit Application&lt;/button&gt;
+  &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre><h2>routes/students.js</h2><pre>const express = require("express");
+const mongoose = require("mongoose");
+const Student = require("../models/Student");
+const router = express.Router();
+
+const isValidId = (id) =&gt; mongoose.Types.ObjectId.isValid(id);
+
+// CREATE
+router.post("/", async (req, res) =&gt; {
+  try {
+    const student = await Student.create(req.body);
+    res.status(201).json(student);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// READ all
+router.get("/", async (req, res) =&gt; {
+  try {
+    res.json(await Student.find().sort({ rollNo: 1 }));
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// READ one
+router.get("/:id", async (req, res) =&gt; {
+  if (!isValidId(req.params.id)) return res.status(400).json({ error: "Invalid id" });
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ error: "Student not found" });
+    res.json(student);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// UPDATE
+router.put("/:id", async (req, res) =&gt; {
+  if (!isValidId(req.params.id)) return res.status(400).json({ error: "Invalid id" });
+  try {
+    const student = await Student.findByIdAndUpdate(req.params.id, req.body, {
+      new: true, runValidators: true,
+    });
+    if (!student) return res.status(404).json({ error: "Student not found" });
+    res.json(student);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE
+router.delete("/:id", async (req, res) =&gt; {
+  if (!isValidId(req.params.id)) return res.status(400).json({ error: "Invalid id" });
+  try {
+    const student = await Student.findByIdAndDelete(req.params.id);
+    if (!student) return res.status(404).json({ error: "Student not found" });
+    res.json({ message: "Student deleted", id: student._id });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+module.exports = router;
+</pre><h2>server.js</h2><pre>require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const path = require("path");
+const Application = require("./models/Application");
+const studentRoutes = require("./routes/students");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());                          // JSON bodies (REST API)
+app.use(express.urlencoded({ extended: true }));  // HTML form bodies
+app.use(express.static(path.join(__dirname, "public")));
+
+// CRUD API for students
+app.use("/api/students", studentRoutes);
+
+const escapeHtml = (s) =&gt;
+  String(s ?? "").replace(/[&amp;&lt;&gt;"']/g, (c) =&gt; ({ "&amp;": "&amp;amp;", "&lt;": "&amp;lt;", "&gt;": "&amp;gt;", '"': "&amp;quot;", "'": "&amp;#39;" }[c]));
+
+// Student application form: save to MongoDB
+app.post("/apply", async (req, res) =&gt; {
+  try {
+    const saved = await Application.create(req.body);
+    res.status(201).send(`
+      &lt;h2&gt;Application submitted successfully&lt;/h2&gt;
+      &lt;p&gt;Application ID: &lt;b&gt;${saved._id}&lt;/b&gt;&lt;/p&gt;
+      &lt;p&gt;Thank you, ${escapeHtml(saved.fullName)}.&lt;/p&gt;
+      &lt;a href="/applications"&gt;View all applications&lt;/a&gt; | &lt;a href="/apply.html"&gt;Submit another&lt;/a&gt;`);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      const msgs = Object.values(err.errors).map((e) =&gt; `&lt;li&gt;${escapeHtml(e.message)}&lt;/li&gt;`).join("");
+      return res.status(400).send(`&lt;h2&gt;Please fix the following&lt;/h2&gt;&lt;ul&gt;${msgs}&lt;/ul&gt;&lt;a href="/apply.html"&gt;Go back&lt;/a&gt;`);
+    }
+    res.status(500).send("Server error");
+  }
+});
+
+// List all applications
+app.get("/applications", async (req, res) =&gt; {
+  try {
+    const apps = await Application.find().sort({ createdAt: -1 });
+    const rows = apps.map((a) =&gt; `&lt;tr&gt;&lt;td&gt;${escapeHtml(a.fullName)}&lt;/td&gt;&lt;td&gt;${escapeHtml(a.email)}&lt;/td&gt;
+      &lt;td&gt;${escapeHtml(a.phone)}&lt;/td&gt;&lt;td&gt;${escapeHtml(a.course)}&lt;/td&gt;&lt;td&gt;${a.percentage}&lt;/td&gt;&lt;/tr&gt;`).join("");
+    res.send(`&lt;h2&gt;Student Applications (${apps.length})&lt;/h2&gt;
+      &lt;table border="1" cellpadding="6"&gt;&lt;tr&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Email&lt;/th&gt;&lt;th&gt;Phone&lt;/th&gt;&lt;th&gt;Course&lt;/th&gt;&lt;th&gt;%&lt;/th&gt;&lt;/tr&gt;${rows}&lt;/table&gt;
+      &lt;p&gt;&lt;a href="/apply.html"&gt;New application&lt;/a&gt;&lt;/p&gt;`);
+  } catch (err) {
+    res.status(500).send("Server error");
+  }
+});
+
+// Connect to MongoDB, then start the server
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() =&gt; {
+    console.log("MongoDB connected");
+    app.listen(PORT, () =&gt; console.log(`Server running at http://localhost:${PORT}`));
+  })
+  .catch((err) =&gt; {
+    console.error("MongoDB connection failed:", err.message);
+    process.exit(1);
+  });
+</pre></body></html>
